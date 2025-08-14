@@ -69,8 +69,8 @@ private[mtl] trait AskForMonadPartialOrder[F[_], G[_], E] extends Ask[G, E] {
   override def ask[E2 >: E] = lift(F.ask)
 }
 
-private[mtl] trait LowPriorityAskInstances extends LowPriorityAskInstancesCompat {
-
+private[mtl] sealed trait LowPriorityAskInstances1 extends LowPriorityAskInstancesCompat {
+  @deprecated("use askForLiftValue instead", since = "cats-mtl 1.6.0")
   implicit def askForMonadPartialOrder[F[_], G[_], E](
       implicit lift0: MonadPartialOrder[F, G],
       F0: Ask[F, E]): Ask[G, E] =
@@ -78,6 +78,14 @@ private[mtl] trait LowPriorityAskInstances extends LowPriorityAskInstancesCompat
       val lift: MonadPartialOrder[F, G] = lift0
       val F: Ask[F, E] = F0
     }
+}
+
+private[mtl] sealed trait LowPriorityAskInstances0 extends LowPriorityAskInstances1 {
+  implicit def askForLiftValue[F[_], G[_], E](
+      implicit F0: Ask[F, E],
+      lift: LiftValue[F, G]
+  ): Ask[G, E] =
+    F0.liftTo[G]
 
   implicit def applicativeAsk[F[_]: Applicative]: Applicative[Ask[F, *]] =
     new Applicative[Ask[F, *]] {
@@ -88,7 +96,7 @@ private[mtl] trait LowPriorityAskInstances extends LowPriorityAskInstancesCompat
     }
 }
 
-private[mtl] trait AskInstances extends LowPriorityAskInstances {
+private[mtl] trait AskInstances extends LowPriorityAskInstances0 {
 
   implicit def askForKleisli[F[_], E](implicit F: Applicative[F]): Ask[Kleisli[F, E, *], E] =
     Local.baseLocalForKleisli[F, E]

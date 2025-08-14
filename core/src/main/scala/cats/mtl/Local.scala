@@ -58,7 +58,15 @@ trait Local[F[_], E] extends Ask[F, E] with Serializable {
     new Local.Lifted(this, lift)
 }
 
-private[mtl] trait LowPriorityLocalInstances extends LowPriorityLocalInstancesCompat {
+private[mtl] sealed trait LowPriorityLocalInstances1 extends LowPriorityLocalInstancesCompat {
+  implicit def localForLiftKind[F[_], G[_], E](
+      implicit F0: Local[F, E],
+      lift: LiftKind[F, G]
+  ): Local[G, E] =
+    F0.liftTo[G]
+}
+
+private[mtl] trait LowPriorityLocalInstances0 extends LowPriorityLocalInstances1 {
   implicit def localForKleisli[F[_]: Monad, E, R](
       implicit F0: Local[F, E]): Local[Kleisli[F, R, *], E] =
     new Local[Kleisli[F, R, *], E] with AskForMonadPartialOrder[F, Kleisli[F, R, *], E] {
@@ -70,7 +78,7 @@ private[mtl] trait LowPriorityLocalInstances extends LowPriorityLocalInstancesCo
     }
 }
 
-private[mtl] trait LocalInstances extends LowPriorityLocalInstances {
+private[mtl] trait LocalInstances extends LowPriorityLocalInstances0 {
 
   implicit def baseLocalForKleisli[F[_], E](
       implicit F: Applicative[F]): Local[Kleisli[F, E, *], E] =
